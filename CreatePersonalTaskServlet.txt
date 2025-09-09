@@ -51,3 +51,34 @@ public class CreatePersonalTaskServlet extends HttpServlet {
         }
     }
 }
+
+
+
+@Override
+public List<Task> getTasksByUser(int userId) {
+    List<Task> tasks = new ArrayList<>();
+    String sql = "SELECT * FROM tasks WHERE created_by_user_id = ?";
+
+    try (Connection conn = getConnection();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+
+        ps.setInt(1, userId);
+        ResultSet rs = ps.executeQuery();
+
+        while (rs.next()) {
+            Task task = new Task();
+            task.setId(rs.getInt("id"));
+            task.setTitle(rs.getString("title"));
+            task.setDescription(rs.getString("description"));
+            task.setPriority(TaskPriority.valueOf(rs.getString("priority")));
+            task.setStatus(TaskStatus.valueOf(rs.getString("status")));
+            task.setCreatedAt(rs.getTimestamp("created_at"));
+            task.setDeadline(rs.getTimestamp("deadline"));
+            tasks.add(task);
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+
+    return tasks;
+}
