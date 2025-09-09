@@ -1,0 +1,54 @@
+package com.yash.tasktracker.controller;
+
+import com.yash.tasktracker.dao.TaskDAO;
+import com.yash.tasktracker.daoimpl.TaskDAOImpl;
+import com.yash.tasktracker.model.Task;
+import com.yash.tasktracker.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@WebServlet("/dashboard")
+public class TaskDashboardServlet extends HttpServlet {
+
+    private TaskDAO taskDAO = new TaskDAOImpl();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+
+        List<Task> allTasks = taskDAO.readAll();
+        // Filter personal tasks by createdBy field
+        List<Task> personalTasks = allTasks.stream()
+                .filter(task -> task.getCreatedBy() != null && task.getCreatedBy().equalsIgnoreCase(user.getFirstName()))
+                .collect(Collectors.toList());
+
+        request.setAttribute("personalTasks", personalTasks);
+        request.getRequestDispatcher("ManagerDashboard.jsp").forward(request, response);
+    }
+}
+
+
+
+
+
+
+
+
+

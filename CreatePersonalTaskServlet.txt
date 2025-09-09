@@ -1,0 +1,66 @@
+package com.yash.tasktracker.controller;
+
+import com.yash.tasktracker.dao.TaskDAO;
+import com.yash.tasktracker.daoimpl.TaskDAOImpl;
+import com.yash.tasktracker.model.Task;
+import com.yash.tasktracker.model.TaskPriority;
+import com.yash.tasktracker.model.TaskStatus;
+import com.yash.tasktracker.model.User;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+@WebServlet("/createPersonalTask")
+public class CreatePersonalTaskServlet extends HttpServlet {
+
+    private TaskDAO taskDAO = new TaskDAOImpl();
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        HttpSession session = request.getSession();
+        User user = (User) session.getAttribute("user");
+
+        if (user == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+
+        try {
+            String title = request.getParameter("title");
+            String description = request.getParameter("description");
+            String priorityStr = request.getParameter("priority");
+            String dueDateStr = request.getParameter("dueDate");
+
+            Task task = new Task();
+            task.setTitle(title);
+            task.setDescription(description);
+            task.setPriority(TaskPriority.valueOf(priorityStr.toUpperCase()));
+            task.setStatus(TaskStatus.ASSIGNED);
+            task.setCreatedAt(new Date());
+            task.setCreatedBy(user.getFirstName());
+
+            if (dueDateStr != null && !dueDateStr.isEmpty()) {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm");
+                task.setDeadline(sdf.parse(dueDateStr));
+            }
+
+            taskDAO.create(task);
+
+            response.sendRedirect("dashboard");
+        } catch (ParseException e) {
+            e.printStackTrace();
+            response.sendRedirect("dashboard?error=InvalidDate");
+        }
+    }
+}
